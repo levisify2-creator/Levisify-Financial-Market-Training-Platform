@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Levisify Training Platform</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#172033}
+header{background:#14213d;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:18px;margin:0}
+button{border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:600}
+.primary{background:#1769e0;color:#fff}.danger{background:#c62828;color:#fff}
+.container{max-width:900px;margin:25px auto;padding:0 16px}
+.card{background:#fff;border-radius:14px;padding:22px;margin-bottom:18px;box-shadow:0 3px 15px rgba(0,0,0,.07)}
+.login{max-width:420px;margin:70px auto}
+input{width:100%;padding:13px;margin:7px 0 13px;border:1px solid #ccd4df;border-radius:8px}
+.hidden{display:none}
+.progress{height:10px;background:#e4e9f0;border-radius:10px;overflow:hidden}.bar{height:100%;background:#1769e0;width:0}
+.day{border:1px solid #e1e6ed;border-radius:10px;padding:15px;margin:10px 0;display:flex;justify-content:space-between;align-items:center}
+.locked{opacity:.55}.small{font-size:13px;color:#657083}
+.error{color:#c62828;margin:10px 0}.success{color:#16803c;margin:10px 0}
+</style>
+</head>
+<body>
+
+<div id="loginPage" class="container">
+  <div class="card login">
+    <h2>Levisify Training Platform</h2>
+    <p class="small">Sign in with your training account.</p>
+    <label>Email</label>
+    <input id="email" type="email" placeholder="Your training email">
+    <label>Password</label>
+    <input id="password" type="password" placeholder="Your training password">
+    <button class="primary" style="width:100%" onclick="login()">Log in</button>
+    <div id="loginMessage"></div>
+  </div>
+</div>
+
+<div id="appPage" class="hidden">
+<header>
+  <h1>Levisify Financial Market Training</h1>
+  <button class="danger" onclick="logout()">Log out</button>
+</header>
+
+<div class="container">
+  <div class="card">
+    <h2>21-Day Financial Market Intelligence Training</h2>
+    <p id="userEmail" class="small"></p>
+    <p>Course progress: <strong id="progressText">0%</strong></p>
+    <div class="progress"><div id="progressBar" class="bar"></div></div>
+  </div>
+
+  <div class="card">
+    <h3>Training Programme</h3>
+    <div id="days"></div>
+  </div>
+</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBinwlrtAWip7lfmGz-Xy3d3vUuxzAhXsI",
+  authDomain: "levisify-financial-market-pro.firebaseapp.com",
+  projectId: "levisify-financial-market-pro",
+  storageBucket: "levisify-financial-market-pro.firebasestorage.app",
+  messagingSenderId: "482439283597",
+  appId: "1:482439283597:web:ec1e6acadccb35a4ac73c4",
+  measurementId: "G-Y169YK6JBF"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+const lessons = [
+"Introduction to Financial Markets","Market Participants and Market Mechanics",
+"Currency Pairs and Market Sessions","Risk Management Fundamentals",
+"Technical Analysis Foundations","Support and Resistance",
+"Market Structure","Trend and Momentum",
+"Liquidity and Stop Hunts","Supply and Demand Zones",
+"Fair Value Gaps","Multi-Timeframe Analysis",
+"Price Action Execution","Trade Planning",
+"Entries, Stop Loss and Take Profit","Risk-to-Reward",
+"Trading Psychology","News and Volatility",
+"Building a Trading Routine","Review and Journaling",
+"Final Assessment and Next Steps"
+];
+
+let completed = JSON.parse(localStorage.getItem("completedLessons") || "[]");
+
+window.login = async function(){
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value;
+  const msg=document.getElementById("loginMessage");
+  msg.className="";
+  msg.textContent="";
+  if(!email || !password){msg.className="error";msg.textContent="Enter your email and password.";return;}
+  try{
+    await signInWithEmailAndPassword(auth,email,password);
+  }catch(e){
+    msg.className="error";
+    msg.textContent="Login failed. Check the training email and password.";
+  }
+};
+
+window.logout = async function(){ await signOut(auth); };
+
+onAuthStateChanged(auth,(user)=>{
+  if(user){
+    document.getElementById("loginPage").classList.add("hidden");
+    document.getElementById("appPage").classList.remove("hidden");
+    document.getElementById("userEmail").textContent="Signed in as: "+user.email;
+    renderDays();
+  }else{
+    document.getElementById("appPage").classList.add("hidden");
+    document.getElementById("loginPage").classList.remove("hidden");
+  }
+});
+
+window.completeLesson = function(day){
+  if(!completed.includes(day)) completed.push(day);
+  localStorage.setItem("completedLessons",JSON.stringify(completed));
+  renderDays();
+};
+
+function renderDays(){
+  const box=document.getElementById("days");
+  box.innerHTML="";
+  lessons.forEach((title,i)=>{
+    const day=i+1;
+    const unlocked=day===1 || completed.includes(day-1);
+    const done=completed.includes(day);
+    const div=document.createElement("div");
+    div.className="day "+(!unlocked?"locked":"");
+    div.innerHTML=`
+      <div>
+        <strong>Day ${day}: ${title}</strong><br>
+        <span class="small">${done?"Completed":unlocked?"Lesson available":"Locked — complete the previous day first"}</span>
+      </div>
+      <div>
+        ${unlocked && !done ? `<button class="primary" onclick="completeLesson(${day})">Complete</button>` :
+          done ? `<span class="success">✓ Done</span>` : `<span>🔒</span>`}
+      </div>`;
+    box.appendChild(div);
+  });
+  const pct=Math.round(completed.length/21*100);
+  document.getElementById("progressText").textContent=pct+"%";
+  document.getElementById("progressBar").style.width=pct+"%";
+}
+</script>
+</body>
+</html>
