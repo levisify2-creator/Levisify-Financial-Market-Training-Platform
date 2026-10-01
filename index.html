@@ -100,10 +100,11 @@ window.login = async function(){
   if(!email || !password){msg.className="error";msg.textContent="Enter your email and password.";return;}
   try{
     await signInWithEmailAndPassword(auth,email,password);
-  }catch(e){
-    msg.className="error";
-    msg.textContent="Login failed. Check the training email and password.";
-  }
+}catch(e){
+  msg.className="error";
+  msg.textContent="Login error: " + e.code;
+  console.error(e);
+}
 };
 
 window.logout = async function(){ await signOut(auth); };
